@@ -1,0 +1,156 @@
+\documentclass[a4paper]{article}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=25mm,
+ right=25mm,
+ top=20mm,
+ }
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+
+\title{Context-Aware Models of Behavior}
+
+\author{Anshuman Singh Bhadauria}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction }
+\label{sec:introduction}
+Primary goal of this project is to model behavior of individual investors of BGL BNP Paribas, based on their investments in the US or European financial markets. More specifically, we want to learn how these investors make decisions, and model that decision function of the investors, so we can predict their most probable action in a given situation. With this learnt decision function or behavior model, we want to answer questions like, what is a suitable investment for a particular investor? which market situations stimulate the investor? how sensitive the investor is to the changes in value of security? is the investor assigned to the right risk category? and many more. These models will be used for making investment recommendations and behavioral interventions. The work closest to our idea can be found in \cite{Robin2012ModelingBehavior}, where the authors do a transaction level classification into risky and non-risky classes. However, the features used for classification are limited to the value of volatility index (VIX) at the time of transaction and some manually features engineered by domain specialists that give an idea about the quality of the security being transacted.
+
+We propose to use a wider array of data that is not manually engineered and can be thought of as time stamped data from market, economic, security specific sensors. Further, we intend to use dimensionality reduction techniques to keep the problem tractable, in case, the number of dimensions explodes. The output of our proposed model will be the probability that an investor with a certain historical transactions (or a new investor), will invest in a given financial security, in certain market conditions. An example output from the model could be, "Given that the market is extremely volatile, and given the history of investments done by investor X, there is 90 percent probability that he/she can invest in \textbf{AAPL} stock today."
+
+\section{Problem statement}
+The behavior models are essentially a classifier that act as a mapping from situation space (called feature space in machine learning jargon) to an action space (called output space in ML). We believe every investor is running these kind of classifiers in their head. They are constantly observing the market, and the performance of financial securities. . In our case, behavior model of an investor is a function that takes in a situation from the situation space as an argument and emits a probability distribution over the action space. Preferably, the \textit{maximum a posteriori} estimate of the distribution over action space, matches the action an investor is most likely to take.
+
+\subsection{Transaction Similarity}
+An important problem at hand is to quantify the difference between any two transactions, because buying the same security on different days can have different level of speculation. Assuming the transaction is being done on the same day, and the same amount is being invested in same type of security (stock), some factors that might influence the underlying risks of the security:
+\begin{enumerate}
+    \item Sector and Industry of the stock.
+    \item Performance in last one week, one month and so on.
+    \item Sampling means of daily returns.
+    \item Last date of dividend
+    \item Geographical location of the company
+    \item Type of product
+    \item Brand value
+    \item Popularity of the stock
+    \item Is it a family business?
+    \item Others
+\end{enumerate}
+
+With the above attributes, can we quantitatively say what is the difference between buying:
+\begin{enumerate}
+    \item Tesla (Electric car manufacturing) Stock
+    \item Apple (Electronic equipment manufacturing) Stock 
+\end{enumerate}
+
+
+Let's ask another question to make the point more concrete. Is buying Google stock today, similar to buying Tesla or Apple stocks? We can say Google and Apple both make phones, and are technology companies, so they should be closer. However, this is just one dimension of similarity, how about stock performance or some other parameter from the list above? Quantifying this difference is not trivial. Further, we know that including too many dimensions for comparison will make each transaction too exclusive, and can lead to dissimilarity even between very similar transactions. 
+
+\subsection{Distance Matrix}
+A likely outcome of the distance metric that we calculate using above features could look like Table \ref{distMatrix}.   
+\begin{table}[!htbp]
+\centering
+\caption{Distance Matrix for a particular timestep}
+\begin{tabular}{|c|c|c|c|c|c|} \hline
+Stock & AAPL & TSLA & GOOGL\\ \hline
+AAPL & 0 & 0.4 & 0.2\\ \hline
+TSLA & 0.4 & 0 & 0.3\\\hline
+GOOGL & 0.2 & 0.3 & 0\\ \hline
+\end{tabular}
+\label{distMatrix}
+\end{table}
+Once we have such a distance matrix, we can use it for clustering the transactions for every investor. The characteristics of these clusters, will explain the length and breadth (diversification, capital etc.) the investor goes in his investments.
+
+The second part of the problem is that the distance matrix is time variant. This simply means, that some attributes of a stock don't change overtime, but others do. An example of not changing attribute is the industry of the stock (although in really long term scenarios even this can change) and an example of changing attributes could be revenue. 
+
+At this point, we can introduce an idea of context. A context simply makes the situation of a particular stock on a particular day a first class citizen. This means, instead of identifying stocks by their name, we can identify them by the situation they are in. For example, 
+\begin{table}[!htbp]
+\centering
+\caption{Behavior as a Joint Distribution of Action and Context}
+\begin{tabular}{|c|c|c|c|c|c|} \hline
+No. & Price & Date & Volume & Technical State & Fundamental State\\ \hline
+Data & 320.0 & 10,000 EUR & 1.2 Million & Growth & Strong\\
+Metadata & +1\% & -20,000 EUR & Unstable & Declining & Strong\\\hline
+\hline\end{tabular}
+\end{table}
+\section{Data description}
+\label{sec:theory}
+The data comprises of three parts:
+\begin{enumerate}
+\item Transaction Data: The transaction data is created by the investors themselves. It has following attributes:
+\begin{enumerate}
+  \item{Name of security}
+  \item{Type of security}
+  \item{Total amount transacted}
+  \item{Quantity purchased}
+  \item{Date}
+  \item{Currency}
+  \item{Stock Exchange}
+  \item{Type of action (Buy, Sell)}
+\end{enumerate}
+\item Context Data: 
+\begin{enumerate}
+  \item{Historical prices and volume of securities}
+  \item{Fundamental information of securities (like revenue, growth ratios etc.)}
+  \item{Market indices (e.g. S\&P 500)}
+  \item{Economic indicators (e.g. Oil prices, GDP, Inflation etc.)}
+  \item{Volatility}
+  \item{Global events}
+\end{enumerate}
+\item Metadata about investor and market:
+\begin{enumerate}
+  \item{Years of investment}
+  \item{Diversification coefficients for location, security type, industry etc.}
+  \item{Assets under management}
+\end{enumerate}
+\end{enumerate}
+The granularity of data is different for different variables. Also, some variables are discrete valued, while others continuous. However, as can be seen most of the data is time series.
+\begin{table}[!htbp]
+\centering
+\caption{Behavior as a Joint Distribution of Action and Context}
+\begin{tabular}{|c|c|c|c|c|c|} \hline
+No. & Date & Amount & Context State & Technical State & Fundamental State\\ \hline
+233 & 05-Oct-2013 & 10,000 EUR & Stable & Growth & Strong\\
+234 & 05-Nov-2013 & -20,000 EUR & Unstable & Declining & Strong\\\hline
+\hline\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Behavior as a Joint Distribution of Action and Context}
+\begin{tabular}{|c|c|c|c|} \hline
+Action/Context & Stable & Unstable & Total\\ \hline
+Buy & 0.65 & 0.35 & 0.1\\ \hline
+Sell & 0.05 & 0.95 & 0.1\\ \hline
+Hold & 0.5 & 0.5 & 0.2\\ \hline
+Do Nothing & 0.5 & 0.1 & 0.6\\ \hline
+Total & 0.7 & 0.3 & \textcolor{green}{1.0}\\
+\hline\end{tabular}
+\end{table}
+\section{Feature Engineering}
+\begin{enumerate}
+    \item Diversification Coefficient: This is kind of a summary of how diversifying a transaction is, taking into account rest of the portfolio. This feature can be useful in understanding the maturity of investors. With this feature we can quantify, how different or how far away the current transaction is from the last transaction and the rest of the portfolio.
+\end{enumerate}
+\section{Proposed Models}
+After analysis of the data, we are progressively moving towards dynamic state-space models. We explain the models in order we considered them, giving an explanation of its suitability and shortcomings for our use-case.
+\subsection{Probabilistic Graphical Models}
+Probabilistics Graphical Modelds or PGMs provide is a framework for representation and modeling dependencies and interactions between random variables. A very concise introduction to graphical models can be found in \cite{JordanANAcknowledgments}, for further details please refer to \cite{Koller2009ProbabilisticTechniques}
+\subsection{Bayesian or Belief Networks}
+We wish to examine how some variables are affected due to changes in other variables. and capture the correlations and causalities in  
+\subsection{Dynamic Bayesian Networks}
+\subsection{Hidden Markov Models}
+We hypothesize that the decisions made by investors come from different states of mind. But, since these states are not directly observable, they are considered hidden.
+\subsection{Partially Observable Hidden Markov Models}
+\subsection{Linear-Gaussian State-Space Models or Kalman Filter}
+\bibliographystyle{plain}
+\bibliography{mendeley_v2}
+\end{document}
